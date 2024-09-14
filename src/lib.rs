@@ -4,11 +4,28 @@ use coloredpp::Colorize;
 
 #[derive(Clone, Debug)]
 pub struct Opt<'a> {
+    /// option name (--run)
     pub name: &'a str,
+    /// option short name (-r)
     pub short: Option<&'a str>,
+    /// (-l, --long)
     pub manual: &'a str,
+    /// option description
     pub description: &'a str,
+    /// option value
     pub value: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Arg<'a> {
+    // argument name (run)
+    pub name: &'a str,
+    // argument name (run [options])
+    pub manual: &'a str,
+    // argument description
+    pub description: &'a str,
+    /// option values
+    pub values: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -17,6 +34,7 @@ pub struct CLI<'a> {
     pub version: Option<&'a str>,
     pub description: Option<&'a str>,
     pub options: Vec<Opt<'a>>,
+    pub args: Vec<Arg<'a>>,
 }
 
 impl<'a> CLI<'a> {
@@ -26,6 +44,7 @@ impl<'a> CLI<'a> {
             version: None,
             description: None,
             options: vec![],
+            args: vec![],
         }
     }
 
@@ -44,6 +63,17 @@ impl<'a> CLI<'a> {
     /// set the app description
     pub fn description(&mut self, desc: &'a str) -> &mut Self {
         self.description = Some(desc);
+        self
+    }
+
+    /// add new arg
+    pub fn arg(&mut self, name: &'a str, manual: &'a str, description: &'a str) -> &mut Self {
+        self.args.push(Arg {
+            name,
+            manual,
+            description,
+            values: vec![],
+        });
         self
     }
 
@@ -96,18 +126,15 @@ impl<'a> CLI<'a> {
     /// Parse the CL arguments
     pub fn parse(&mut self) {
         let args: Vec<String> = env::args().collect();
-
         let mut iter = args.iter().peekable();
-        // skip trought the command name
         iter.next();
-        // parse args
+
         while let Some(arg) = iter.next() {
             match arg.as_str() {
                 "--help" | "-h" => {
                     self.print_help();
                 }
                 "--version" | "-v" => {
-                    // print version
                     self.print_version();
                 }
                 other => {
@@ -123,6 +150,15 @@ impl<'a> CLI<'a> {
                                 iter.next();
                             }
                         }
+                    } else if let Some(arg_def) = self.args.iter_mut().find(|a| a.name == other) {
+                        while let Some(value) = iter.peek() {
+                            if value.starts_with('-') {
+                                break;
+                            }
+                            arg_def.values.push(value.to_string());
+                            iter.next();
+                        }
+                        arg_def.values.push("".to_string());
                     }
                 }
             }
@@ -130,11 +166,22 @@ impl<'a> CLI<'a> {
     }
 
     /// Get the value of a specific option by name
-    pub fn get(&self, opt_name: &str) -> Option<&str> {
-        self.options
-            .iter()
-            .find(|opt| opt.name == opt_name)
-            .and_then(|opt| opt.value.as_deref())
+    pub fn get(&self, name: &str) -> Option<&[String]> {
+        if let Some(opt) = self.options.iter().find(|opt| opt.name == name) {
+            if let Some(ref v) = opt.value {
+                Some(std::slice::from_ref(v))
+            } else {
+                None
+            }
+        } else if let Some(arg) = self.args.iter().find(|arg| arg.name == name) {
+            if !arg.values.is_empty() {
+                Some(&arg.values)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     fn print_help(&self) {

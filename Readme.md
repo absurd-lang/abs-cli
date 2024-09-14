@@ -13,11 +13,16 @@ fn main() {
         .name("My Program")
         .version("1.0.0")
         .description("My super cool cli program")
-        .option("-l, --ls", "list the directory");
+        .option("-l, --ls", "list the directory")
+        .arg("run", "run <file>", "run the file");
     program.parse();
 
-    if let Some(ls_value) = program.get("--ls") {
-        println!("Option --ls provided with value: {}", ls_value);
+    if let Some(ls_values) = program.get("--ls") {
+        println!("Option --ls provided with value: {:?}", ls_values);
+    }
+
+    if let Some(run_values) = program.get("run") {
+        println!("Argument run provided with value: {:?}", run_values);
     }
 }
 ```
