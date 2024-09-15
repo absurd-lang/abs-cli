@@ -213,7 +213,10 @@ impl<'a> CLI<'a> {
                 opt.description
             )
         });
-        println!("");
+        println!("\n{}", "Arguments:".yellow().bold());
+        self.args
+            .iter()
+            .for_each(|args| println!("\t{} \t{}", args.manual.blue(), args.description));
     }
 
     fn print_version(&mut self) {
