@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.2.2
+
+- added short command stacking
+
 ### 0.2.1
 
 - fixed help command

@@ -138,11 +138,13 @@ impl<'a> CLI<'a> {
                     self.print_version();
                 }
                 other => {
-                    if let Some(opt) = self
-                        .options
-                        .iter_mut()
-                        .find(|o| o.name == other || o.short == Some(other))
-                    {
+                    if let Some(opt) = self.options.iter_mut().find(|o| {
+                        o.name == other || {
+                            let n: Vec<char> = other.chars().skip(1).collect();
+                            let c: Vec<char> = o.short.unwrap_or("").chars().skip(1).collect();
+                            o.short == Some(other) || n.contains(c.get(0).unwrap_or(&' '))
+                        }
+                    }) {
                         opt.value = Some("".to_string());
                         if let Some(value) = iter.peek() {
                             if !value.starts_with('-') {
